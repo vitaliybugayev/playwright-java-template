@@ -1,0 +1,17 @@
+# Build outputs
+build/
+.gradle/
+
+# IDE files
+.idea/
+*.iml
+out/
+
+# OS
+.DS_Store
+
+# Playwright cache (browsers handled in base image)
+ms-playwright/
+
+# Reports
+allure-results/
