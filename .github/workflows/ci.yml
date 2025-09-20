@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build --build-arg PLAYWRIGHT_VERSION=1.54.0 -t pw-java .
+
+      - name: Run tests in Docker (${{ matrix.browser }})
+        run: |
+          docker run --rm --ipc=host \
+            -v "${{ github.workspace }}":/app \
+            -w /app pw-java \
+            ./gradlew --no-daemon test -Denv=ci -Dbrowser=${{ matrix.browser }} -Dheadless=true
+
+      - name: Upload reports (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.browser }}
+          path: |
+            build/reports/**
+          if-no-files-found: warn
+
