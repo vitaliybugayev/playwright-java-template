@@ -9,10 +9,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox]
+    container:
+      image: mcr.microsoft.com/playwright/java:v1.54.0-jammy
+    env:
+      GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-cache
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,37 +26,21 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build image with cache
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          tags: pw-java:latest
-          load: true
-          build-args: |
-            PLAYWRIGHT_VERSION=1.54.0
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Prepare cache dirs
         run: |
           mkdir -p .gradle-cache
 
-      - name: Run tests in Docker (${{ matrix.browser }})
-        run: |
-          docker run --rm --ipc=host \
-            -v "${{ github.workspace }}/.gradle-cache":/home/pwuser/.gradle \
-            -v "${{ github.workspace }}":/app \
-            -w /app pw-java \
-            ./gradlew --no-daemon test -Denv=ci -Dbrowser=${{ matrix.browser }} -Dheadless=true
+      - name: Run tests (Chromium)
+        run: ./gradlew --no-daemon testChromium -Denv=ci -Dheadless=true
 
-      - name: Upload reports (${{ matrix.browser }})
+      - name: Run tests (Firefox)
+        run: ./gradlew --no-daemon testFirefox -Denv=ci -Dheadless=true
+
+      - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reports-${{ matrix.browser }}
+          name: reports
           path: |
             build/reports/**
           if-no-files-found: warn

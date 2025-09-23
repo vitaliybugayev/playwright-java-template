@@ -98,3 +98,31 @@ tasks.register('playwrightInstall', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     args = ['install']
 }
+
+// Browser-specific test tasks to run in a single container without matrix duplication
+tasks.register('testChromium', Test) {
+    dependsOn 'playwrightInstall'
+    useJUnitPlatform()
+    // forward system properties as in 'test'
+    [ 'env', 'base_url', 'slowmo', 'screenshot', 'snapshot' ].each { key ->
+        def value = System.getProperty(key)
+        if (value != null) systemProperty key, value
+    }
+    systemProperty 'browser', 'chromium'
+    systemProperty 'headless', System.getProperty('headless', 'true')
+    testLogging { events "passed", "skipped", "failed"; showStandardStreams = true }
+    reports { junitXml.required.set(true); html.required.set(true) }
+}
+
+tasks.register('testFirefox', Test) {
+    dependsOn 'playwrightInstall'
+    useJUnitPlatform()
+    [ 'env', 'base_url', 'slowmo', 'screenshot', 'snapshot' ].each { key ->
+        def value = System.getProperty(key)
+        if (value != null) systemProperty key, value
+    }
+    systemProperty 'browser', 'firefox'
+    systemProperty 'headless', System.getProperty('headless', 'true')
+    testLogging { events "passed", "skipped", "failed"; showStandardStreams = true }
+    reports { junitXml.required.set(true); html.required.set(true) }
+}
