@@ -4,7 +4,9 @@ import com.microsoft.playwright.*;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Thread-local lifecycle manager for Playwright resources.
@@ -62,6 +64,18 @@ public class PlaywrightContainer {
                     chromiumArgs.add("--no-sandbox");
                 }
                 launchOptions.setArgs(chromiumArgs);
+            }
+
+            // Additional hardening for Firefox in CI containers
+            if (targetBrowser == BrowserFactory.BrowserType.FIREFOX) {
+                Map<String, String> env = new HashMap<>();
+                // Disable GPU/web render paths that can be flaky in headless containers.
+                env.put("MOZ_WEBRENDER", "0");
+                // Loosen content sandbox in CI containers to avoid TargetClosedError on startup.
+                if (Config.isCi()) {
+                    env.put("MOZ_DISABLE_CONTENT_SANDBOX", "1");
+                }
+                launchOptions.setEnv(env);
             }
 
             Config.ensureReportsSubdirs();
