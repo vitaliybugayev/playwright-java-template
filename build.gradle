@@ -82,6 +82,18 @@ tasks.register('playwright', JavaExec) {
 }
 
 tasks.register('playwrightInstall', JavaExec) {
+    // Skip installing if browsers are preinstalled via PLAYWRIGHT_BROWSERS_PATH (e.g., official Docker image)
+    onlyIf {
+        def path = System.getenv('PLAYWRIGHT_BROWSERS_PATH')
+        if (path == null) return true
+        def dir = new File(path)
+        if (!dir.exists()) return true
+        def entries = dir.list()
+        if (entries == null) return true
+        // Heuristics: official images have browser folders like chromium-*, firefox-*, webkit-*
+        def hasBrowsers = entries.any { it.startsWith('chromium-') || it.startsWith('firefox-') || it.startsWith('webkit-') }
+        return !hasBrowsers
+    }
     mainClass = 'com.microsoft.playwright.CLI'
     classpath = sourceSets.main.runtimeClasspath
     args = ['install']

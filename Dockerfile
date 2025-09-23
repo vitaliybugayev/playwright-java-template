@@ -5,6 +5,7 @@ ARG PLAYWRIGHT_VERSION=1.54.0
 FROM mcr.microsoft.com/playwright/java:v${PLAYWRIGHT_VERSION}-jammy
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     GRADLE_USER_HOME=/home/pwuser/.gradle
 
 WORKDIR /app
@@ -21,8 +22,7 @@ RUN ./gradlew --no-daemon -v || true
 COPY src /app/src
 COPY README.md /app/
 
-# Ensure browsers are available for Java CLI context (already present in base, this is a no-op safety)
-RUN ./gradlew --no-daemon playwrightInstall || true
+# Browsers are preinstalled in the base image under /ms-playwright; no extra install needed.
 
 # Default command runs tests; pass extra args after image name to override
 CMD ["./gradlew", "--no-daemon", "test"]
