@@ -2,7 +2,7 @@
 # Use Playwright's official image with system deps and browsers, plus Java.
 
 ARG PLAYWRIGHT_VERSION=1.54.0
-FROM mcr.microsoft.com/playwright/java:${PLAYWRIGHT_VERSION}-jammy
+FROM mcr.microsoft.com/playwright/java:v${PLAYWRIGHT_VERSION}-jammy
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     GRADLE_USER_HOME=/home/pwuser/.gradle
@@ -26,4 +26,3 @@ RUN ./gradlew --no-daemon playwrightInstall || true
 
 # Default command runs tests; pass extra args after image name to override
 CMD ["./gradlew", "--no-daemon", "test"]
-
