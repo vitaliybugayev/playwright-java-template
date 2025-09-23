@@ -9,7 +9,7 @@ Minimal, reusable foundation for UI tests based on:
 
 ## Quick Start
 
-1) Install browsers
+1) Install browsers 
 ```
 ./gradlew playwrightInstall
 ```
