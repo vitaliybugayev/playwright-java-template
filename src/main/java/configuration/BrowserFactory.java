@@ -23,6 +23,13 @@ public class BrowserFactory {
         };
     }
 
+    /** Returns whether the given browser supports video recording. */
+    public static boolean isVideoSupported(BrowserType browserType) {
+        // Playwright video recording is supported in Chromium and WebKit.
+        // Firefox video recording support is limited/unsupported in some environments.
+        return browserType == BrowserType.CHROMIUM || browserType == BrowserType.WEBKIT;
+    }
+
     /**
      * Resolves target browser type from configuration key {@code BROWSER_TYPE} (default: CHROMIUM).
      * Falls back to CHROMIUM on unknown values.

@@ -3,6 +3,8 @@ package configuration;
 import com.microsoft.playwright.*;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Thread-local lifecycle manager for Playwright resources.
@@ -36,18 +38,45 @@ public class PlaywrightContainer {
         }
 
         try {
+            // Resolve target browser early to tune options per engine.
+            BrowserFactory.BrowserType targetBrowser = BrowserFactory.getBrowserType();
+
             BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions();
-            launchOptions.setHeadless(Config.isHeadless()).setSlowMo(Config.getSlowMo());
+            boolean desiredHeadless = Config.isHeadless();
+            // Auto-enforce headless when no X server is present to avoid crashes in containers.
+            if (!desiredHeadless) {
+                String display = System.getenv("DISPLAY");
+                if (display == null || display.isBlank()) {
+                    desiredHeadless = true;
+                }
+            }
+            launchOptions.setHeadless(desiredHeadless).setSlowMo(Config.getSlowMo());
+
+            // Harden CI/Docker defaults for Chromium to avoid sandbox/dev-shm issues.
+            if (targetBrowser == BrowserFactory.BrowserType.CHROMIUM) {
+                // Always mitigate small /dev/shm in containers; harmless on hosts.
+                List<String> chromiumArgs = new ArrayList<>();
+                chromiumArgs.add("--disable-dev-shm-usage");
+                // In CI we may run as root or constrained; drop sandbox if needed.
+                if (Config.isCi()) {
+                    chromiumArgs.add("--no-sandbox");
+                }
+                launchOptions.setArgs(chromiumArgs);
+            }
 
             Config.ensureReportsSubdirs();
             Path videosDir = Config.VIDEOS_DIR();
 
             Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
-                    .setBaseURL(Config.getBaseUrl())
-                    .setRecordVideoDir(videosDir);
+                    .setBaseURL(Config.getBaseUrl());
+
+            // Enable video only where reliably supported.
+            if (BrowserFactory.isVideoSupported(targetBrowser)) {
+                contextOptions.setRecordVideoDir(videosDir);
+            }
 
             Playwright playwright = Playwright.create();
-            Browser browser = BrowserFactory.createBrowser(playwright, BrowserFactory.getBrowserType(), launchOptions);
+            Browser browser = BrowserFactory.createBrowser(playwright, targetBrowser, launchOptions);
             BrowserContext browserContext = browser.newContext(contextOptions);
 
             Page page = browserContext.newPage();

@@ -41,6 +41,22 @@ tasks.withType(JavaCompile).configureEach {
 test {
     dependsOn 'playwrightInstall'
     useJUnitPlatform()
+    // Forward selected system properties from Gradle to the test JVM.
+    // Without this, flags like -Denv=ci or -Dbrowser=firefox won't be visible to tests.
+    [
+        'env',
+        'browser',
+        'headless',
+        'base_url',
+        'slowmo',
+        'screenshot',
+        'snapshot'
+    ].each { key ->
+        def value = System.getProperty(key)
+        if (value != null) {
+            systemProperty key, value
+        }
+    }
     reports {
         junitXml.required.set(true)
         html.required.set(true)

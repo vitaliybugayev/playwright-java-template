@@ -154,6 +154,11 @@ public class Config {
     public static boolean isSnapshotEnabled() { return getBool("SNAPSHOT", true); }
     /** Returns the resolved current environment name. */
     public static String getCurrentEnv() { return currentEnv; }
+    /** Whether current execution is CI-like. */
+    public static boolean isCi() {
+        String ciEnv = System.getenv("CI");
+        return "ci".equalsIgnoreCase(currentEnv) || (ciEnv != null && ciEnv.equalsIgnoreCase("true"));
+    }
     /** Clears environment cache; effective after next {@link #reload()}. */
     public static void clearCache() { envCache.clear(); }
 
